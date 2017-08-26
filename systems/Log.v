@@ -144,7 +144,6 @@ Section Log.
      | inr (src, m) => let '(_, d', _) := net_handlers h src m d in d'
     end.
 
-
   Fixpoint apply_log h (d : @data orig_base_params) (entries : list entry) : @data orig_base_params :=
     match entries with
     | [] => d
@@ -406,20 +405,20 @@ Section Log.
           reflexivity.
   Qed.
 
-  Definition do_reboot (h : do_name) (w : log_files -> IOStreamWriter.wire) :
-    (data * do_disk log_files) :=
+  Definition do_log_reboot (h : do_name) (w : log_files -> IOStreamWriter.wire) :
+    option (data * do_disk log_files) :=
     match wire_to_log w with
-    | Some (n, d, es) => (mk_log_state 0 (apply_log h d es),
-                          fun file => match file with
-                                      | Count => serialize 0
-                                      | Snapshot => serialize d
-                                      | Log => IOStreamWriter.empty
-                                     end)
-    | None => (mk_log_state 0 (init_handlers h), fun _ => IOStreamWriter.empty)
+    | Some (n, d, es) => Some (mk_log_state 0 (reboot (apply_log h d es)),
+                              fun file => match file with
+                                         | Count => serialize 0
+                                         | Snapshot => serialize d
+                                         | Log => IOStreamWriter.empty
+                                         end)
+    | None => None
     end.
 
   Instance log_failure_params : DiskOpFailureParams log_multi_params :=
-    { do_reboot := do_reboot }.
+    { do_reboot := do_log_reboot }.
 End Log.
 
 Hint Extern 5 (@BaseParams) => apply log_base_params : typeclass_instances.

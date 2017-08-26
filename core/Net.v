@@ -104,7 +104,7 @@ Class DiskOpMultiParams (P : BaseParams) :=
 Class DiskOpFailureParams `(P : DiskOpMultiParams) :=
   {
     do_reboot : do_name -> (file_name -> IOStreamWriter.wire) ->
-                data * do_disk file_name
+                option (data * do_disk file_name)
   }.
 
 Class NameOverlayParams `(P : MultiParams) :=
@@ -644,7 +644,7 @@ Section StepFailureDiskOp.
   | StepFailureDiskOp_reboot : forall h net net' failed failed' d dsk,
       In h failed ->
       failed' = remove do_name_eq_dec h failed ->
-      do_reboot h (disk_to_wire (nwdoDisk net h)) = (d, dsk) ->
+      do_reboot h (disk_to_wire (nwdoDisk net h)) = Some (d, dsk) ->
       net' = mkdoNetwork (nwdoPackets net)
                         (update do_name_eq_dec (nwdoState net) h d)
                         (update do_name_eq_dec (nwdoDisk net) h dsk) ->
