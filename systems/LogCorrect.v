@@ -3,6 +3,8 @@ Require Import Cheerios.Cheerios.
 
 Require Import Verdi.Log.
 
+Require Import mathcomp.ssreflect.ssreflect.
+
 Section LogCorrect.
   Context {orig_base_params : BaseParams}.
   Context {orig_multi_params : MultiParams orig_base_params}.
@@ -29,42 +31,37 @@ Section LogCorrect.
 
   Lemma disk_follows_local_state : forall net failed tr,
       @step_failure_log_star _ _ log_failure_params step_failure_log_init (failed, net) tr ->
-      forall h d dsk, do_reboot h (disk_to_wire (nwdoDisk net h)) = Some (d, dsk) ->
+      forall h d dsk, do_reboot h (disk_to_wire (nwdoDisk net h)) = (d, dsk) ->
       reboot (log_data d) = reboot (log_data (nwdoState net h)).
   Proof.
     remember step_failure_log_init as x.
     intros net failed tr H_st.
     change net with (snd (failed, net)).
     induction H_st using refl_trans_1n_trace_n1_ind.
-    - intros.
-      rewrite Heqx in *.
-      simpl in *.
-      unfold disk_to_wire, init_disk, do_reboot, Log.do_log_reboot in *.
-      break_match;
-        unfold wire_to_log in *;
-        repeat rewrite serialize_deserialize_top_id in Heqo;
-        rewrite f in *; try congruence.
-      break_let.
-      break_let.
+    - move => h d dsk.
+      rewrite Heqx /= /disk_to_wire /init_disk /do_log_reboot /= /wire_to_log /=.
+      rewrite 2!serialize_deserialize_top_id /= f /= => H_eq.
       find_inversion.
-      find_inversion.
-      simpl.
-      rewrite reboot_idem.
-      reflexivity.
+      by rewrite /= reboot_idem.
     - concludes.
-      intros.
-      rewrite Heqx in *.
+      subst.
       match goal with H : step_failure_log _ _ _ |- _ => invcs H end.
-      + break_if.
-        * admit.
-        * admit.
-      + break_if.
-        * admit.
-        * admit.
-      + admit.
-      + admit.
-      + admit.
-      + break_if.
+      * move => h d0 dsk.
+        break_if.
+        + admit.
+        + admit.
+      * move => h0 d0 dsk.
+        break_if.
+        + admit.
+        + admit.
+      + move => h0 d0 dsk.
+        admit.
+      + move => h0 d0 dsk.
+        admit.
+      + move => h0 d dsk.
+        admit.
+      + move => h0 d0 dsk0.
+        break_if.
         * subst.
           admit.
         * admit.
@@ -109,7 +106,8 @@ Section LogCorrect.
       repeat rewrite map_app. simpl.
       rewrite revert_send.
       assert (revert_packet : do_pDst p = pDst (revertPacket p)) by reflexivity.
-      rewrite revert_packet in *.
+      rewrite revert_packet in H8, H6.
+      rewrite revert_packet.
       apply StepFailure_deliver with (xs0 := map revertPacket xs)
                                      (ys0 := map revertPacket ys)
                                      (d0 := log_data d)
@@ -121,7 +119,7 @@ Section LogCorrect.
         break_let. break_let.
         break_if;
           find_inversion;
-          rewrite revert_packet in *;
+          (repeat find_rewrite_lem revert_packet);
           assumption.
       + unfold log_data.
         break_let.

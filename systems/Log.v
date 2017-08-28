@@ -406,15 +406,15 @@ Section Log.
   Qed.
 
   Definition do_log_reboot (h : do_name) (w : log_files -> IOStreamWriter.wire) :
-    option (data * do_disk log_files) :=
+    data * do_disk log_files :=
     match wire_to_log w with
-    | Some (n, d, es) => Some (mk_log_state 0 (reboot (apply_log h d es)),
+    | Some (n, d, es) => (mk_log_state 0 (reboot (apply_log h d es)),
                               fun file => match file with
                                          | Count => serialize 0
                                          | Snapshot => serialize d
                                          | Log => IOStreamWriter.empty
                                          end)
-    | None => None
+    | None => (mk_log_state 0 (reboot (init_handlers h)), fun _ => IOStreamWriter.empty)
     end.
 
   Instance log_failure_params : DiskOpFailureParams log_multi_params :=
